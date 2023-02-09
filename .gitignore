@@ -1,6 +1,6 @@
-.vscode
-.DS_store
-build
-release
-docs
+.vscode/
+.DS_store/
+build/
+release/
+docs/
 PathTracing
