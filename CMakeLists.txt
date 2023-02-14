@@ -2,20 +2,10 @@ cmake_minimum_required (VERSION 3.23)
 
 set(CMAKE_C_COMPILER "/usr/bin/clang")
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-#set(OPENMP_LIBRARIES "/opt/homebrew/Cellar/libomp/14.0.5/lib")
-#set(OPENMP_INCLUDES "/opt/homebrew/Cellar/libomp/14.0.5/include")
 
 project(PathTracing)
 
 set(CMAKE_CXX_STANDARD 11)
-
-#find_package(OpenMP REQUIRED)
-#if (OPENMP_FOUND)
-#    include_directories("${OPENMP_INCLUDES}")
-#    link_directories("${OPENMP_LIBRARIES}")
-#    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-#endif(OPENMP_FOUND)
 
 set(
     SOURCES
@@ -38,6 +28,8 @@ set(
     src/bvh_node.cpp
     src/bvh_tree.h
     src/bvh_tree.cpp
+    src/picture_io.h
+    src/picture_io.cpp
 )
 
 add_executable(PathTracing ${SOURCES})

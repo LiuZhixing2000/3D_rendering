@@ -5,7 +5,6 @@
 #include <string>
 #include <random>
 #include <set>
-#include "picture_io.h"
 
 int renderer::set_case_file_name(const std::string &case_name)
 {
@@ -22,6 +21,7 @@ int renderer::load_case()
     }
     std::string xml_name = case_file_name + ".xml";
     std::string obj_name = case_file_name + ".obj";
+    std::string mtl_name = case_file_name + ".mtl";
     if (!camera.read_camera_from_xml_file(xml_name.c_str()))
     {
         std::cout << "Read camera failed." << std::endl;
@@ -35,6 +35,11 @@ int renderer::load_case()
     if (!object.read_object_from_obj_file(obj_name.c_str()))
     {
         std::cout << "Read object failed." << std::endl;
+        return 0;
+    }
+    if (!object.read_tex_picture_from_mtl_file())
+    {
+        std::cout << "Read texure failed." << std::endl;
         return 0;
     }
     std::cout << "Picture size: " << camera.get_width() << "x" << camera.get_height() << std::endl;

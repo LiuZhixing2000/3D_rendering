@@ -1,14 +1,8 @@
-#pragma once
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image_write.h"
-#include "stb_image.h"
+#ifndef PICTURE_IO_H_
+#define PICTURE_IO_H_
 
-int write_jpg(char const *filename, int x, int y, int comp, const void *data, int quality){
-    return stbi_write_jpg(filename, x, y, comp, data, quality);
-}
+int write_jpg(char const *filename, int x, int y, int comp, const void *data, int quality);
 
-unsigned char* read_jpg(char const *filename, int* width, int* height, int* n){
-    unsigned char* data = stbi_load(filename, width, height, n, 0);
-    return data;
-}
+unsigned char* read_jpg(char const *filename, int* width, int* height, int* n);
+
+#endif

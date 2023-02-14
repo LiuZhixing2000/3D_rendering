@@ -1,5 +1,6 @@
 #pragma once
 #include "tiny_obj_loader.h"
+#include "picture_io.h"
 #include <vector>
 
 class object_c
@@ -9,7 +10,9 @@ public:
     ~object_c() {}
 
     int read_object_from_obj_file(const char *file_name);
+    int read_tex_picture_from_mtl_file();
 
+    const std::string get_object_file_name() const;
     const tinyobj::attrib_t &get_attrib() const;
     const std::vector<tinyobj::shape_t> &get_shapes() const;
     const std::vector<tinyobj::material_t> &get_materials() const;
@@ -74,4 +77,10 @@ private:
     //   +----+----+----+----+----+----+----+----+----+----+     +--------+--------+--------+
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
+
+    std::string object_path_name;
+    std::string object_file_name;
+
+    std::vector<std::string> tex_names;
+    std::vector<unsigned char*> tex_pictures;
 };
