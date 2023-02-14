@@ -304,7 +304,6 @@ vector_c renderer::shade(
     vector_c direct_radiance = shade_direct_light(p, p_triangle_id, wo);
 
     // indirect radiance: path tracing, Russian Roulette
-    // vector_c indirect_radiance(0., 0., 0.);
     vector_c indirect_radiance = shade_indirect_light(p, p_triangle_id, wo);
 
     return direct_radiance + indirect_radiance;
@@ -464,10 +463,41 @@ vector_c renderer::sampling_light_source(
             double diffuse_coefficient = 0.0;
             double specular_coefficient = 0.0;
             double specular_r = 0.0, specular_g = 0.0, specular_b = 0.0;
-            vector_c brdf_diffuse(
-                object.get_materials()[triangle_material_id].diffuse[0],
-                object.get_materials()[triangle_material_id].diffuse[1],
-                object.get_materials()[triangle_material_id].diffuse[2]);
+            vector_c brdf_diffuse;
+            if(object.get_materials()[triangle_material_id].diffuse_texname.empty())
+                brdf_diffuse = vector_c(
+                    object.get_materials()[triangle_material_id].diffuse[0],
+                    object.get_materials()[triangle_material_id].diffuse[1],
+                    object.get_materials()[triangle_material_id].diffuse[2]);
+            else{
+                std::string tex_name = object.get_materials()[triangle_material_id].diffuse_texname;
+                int tex_index_a = object.get_shapes()[0].mesh.indices[3*p_triangle_id].texcoord_index;
+                int tex_index_b = object.get_shapes()[0].mesh.indices[3*p_triangle_id + 1].texcoord_index;
+                int tex_index_c = object.get_shapes()[0].mesh.indices[3*p_triangle_id + 2].texcoord_index;
+                double tex_coord_width_a = object.get_attrib().texcoords[2*tex_index_a];
+                double tex_coord_height_a = object.get_attrib().texcoords[2*tex_index_a + 1];
+                double tex_coord_width_b = object.get_attrib().texcoords[2*tex_index_b];
+                double tex_coord_height_b = object.get_attrib().texcoords[2*tex_index_b + 1];
+                double tex_coord_width_c = object.get_attrib().texcoords[2*tex_index_c];
+                double tex_coord_height_c = object.get_attrib().texcoords[2*tex_index_c + 1];
+                double tex_coord_width = (tex_coord_width_a + tex_coord_width_b + tex_coord_width_c) / 3.0;
+                double tex_coord_height = (tex_coord_height_a + tex_coord_height_b + tex_coord_width_c) / 3.0;
+
+                auto textures = object.get_textures();
+                unsigned char* texture = textures[tex_name];
+                auto textures_info = object.get_textures_info();
+                auto texture_info = textures_info[tex_name];
+                int texture_width = texture_info[0], texture_height = texture_info[1];
+
+                int pos_i = (int)(texture_width * tex_coord_width), pos_j = (int)(texture_height * tex_coord_height);
+                int r_diffuse_value = (int)(texture[3 * (texture_width * pos_j + pos_i)]);
+                int g_diffuse_value = (int)(texture[3 * (texture_width * pos_j + pos_i) + 1]);
+                int b_diffuse_value = (int)(texture[3 * (texture_width * pos_j + pos_i) + 2]);
+
+                brdf_diffuse = vector_c(
+                    r_diffuse_value / 256.0, g_diffuse_value / 256.0, b_diffuse_value / 256.0
+                );
+            }
             vector_c brdf_specular(
                 object.get_materials()[triangle_material_id].specular[0],
                 object.get_materials()[triangle_material_id].specular[1],
@@ -544,127 +574,6 @@ vector_c renderer::sampling_light_source(
     }
 
     return vector_c(total_radiance_r, total_radiance_g, total_radiance_b);
-}
-
-vector_c renderer::sampling_bsdf(
-    const vector_c &p, const int &p_triangle_id,
-    const vector_c &wo
-)const
-{
-    vector_c ans(0., 0., 0.);
-    for(int sampling_i = 0; sampling_i < sample_time_bsdf; sampling_i++){
-        double random_alpha = (double)std::rand() / (double)RAND_MAX * 2. / M_PI;
-        double pdf = std::cos(random_alpha);
-
-        int triangle_material_id = object.get_shapes()[0].mesh.material_ids[p_triangle_id];
-
-        vector_c brdf_diffuse(
-            object.get_materials()[triangle_material_id].diffuse[0],
-            object.get_materials()[triangle_material_id].diffuse[1],
-            object.get_materials()[triangle_material_id].diffuse[2]);
-        vector_c brdf_specular(
-            object.get_materials()[triangle_material_id].specular[0],
-            object.get_materials()[triangle_material_id].specular[1],
-            object.get_materials()[triangle_material_id].specular[2]);
-
-        int triangle_pa_normal_id = object.get_shapes()[0].mesh.indices[3 * p_triangle_id].normal_index;
-        int triangle_pb_normal_id = object.get_shapes()[0].mesh.indices[3 * p_triangle_id + 1].normal_index;
-        int triangle_pc_normal_id = object.get_shapes()[0].mesh.indices[3 * p_triangle_id + 2].normal_index;
-
-        vector_c triangle_pa_normal(
-            object.get_attrib().normals[3 * triangle_pa_normal_id],
-            object.get_attrib().normals[3 * triangle_pa_normal_id + 1],
-            object.get_attrib().normals[3 * triangle_pa_normal_id + 2]);
-        vector_c triangle_pb_normal(
-            object.get_attrib().normals[3 * triangle_pb_normal_id],
-            object.get_attrib().normals[3 * triangle_pb_normal_id + 1],
-            object.get_attrib().normals[3 * triangle_pb_normal_id + 2]);
-        vector_c triangle_pc_normal(
-            object.get_attrib().normals[3 * triangle_pc_normal_id],
-            object.get_attrib().normals[3 * triangle_pc_normal_id + 1],
-            object.get_attrib().normals[3 * triangle_pc_normal_id + 2]);
-
-        vector_c triangle_normal = triangle_pa_normal + triangle_pb_normal + triangle_pc_normal;
-        triangle_normal /= 3.0;
-        triangle_normal.normalize(); 
-
-        // 随机发出一条光线
-        vector_c ray_direction = generate_ray_randomly(p, p_triangle_id);
-        vector_c ray_start = p;
-
-        // 检测该光线是否与物体相交
-        int intersection_trianlge_id = 0;
-        double intersection_t = 0;
-        if(!intersection_detection(ray_start, ray_direction, intersection_trianlge_id, intersection_t))
-            continue;
-
-        // 若相交，检查是否相交在光源上
-        vector_c light_radiance;
-        if(!is_light(intersection_trianlge_id, light_radiance))
-            continue;
-
-        // 若相交在光源上，计算此处的lo
-        vector_c lo = calculate_lo(p, p_triangle_id, vector_c()-ray_direction, wo, light_radiance);
-        lo *= (2*M_PI);
-        ans += lo;
-    }
-    ans /= (double)sample_time_bsdf;
-    return ans;
-}
-
-vector_c renderer::calculate_lo(
-    const vector_c &p, const int &p_triangle_id, const vector_c& wo_direction,
-    const vector_c &wi_direction, const vector_c& wi_radiance
-)const{
-    int triangle_material_id = object.get_shapes()[0].mesh.material_ids[p_triangle_id];
-    vector_c brdf_diffuse(
-        object.get_materials()[triangle_material_id].diffuse[0],
-        object.get_materials()[triangle_material_id].diffuse[1],
-        object.get_materials()[triangle_material_id].diffuse[2]);
-    vector_c brdf_specular(
-        object.get_materials()[triangle_material_id].specular[0],
-        object.get_materials()[triangle_material_id].specular[1],
-        object.get_materials()[triangle_material_id].specular[2]);
-
-    int triangle_pa_normal_id = object.get_shapes()[0].mesh.indices[3 * p_triangle_id].normal_index;
-    int triangle_pb_normal_id = object.get_shapes()[0].mesh.indices[3 * p_triangle_id + 1].normal_index;
-    int triangle_pc_normal_id = object.get_shapes()[0].mesh.indices[3 * p_triangle_id + 2].normal_index;
-
-    vector_c triangle_pa_normal(
-        object.get_attrib().normals[3 * triangle_pa_normal_id],
-        object.get_attrib().normals[3 * triangle_pa_normal_id + 1],
-        object.get_attrib().normals[3 * triangle_pa_normal_id + 2]);
-    vector_c triangle_pb_normal(
-        object.get_attrib().normals[3 * triangle_pb_normal_id],
-        object.get_attrib().normals[3 * triangle_pb_normal_id + 1],
-        object.get_attrib().normals[3 * triangle_pb_normal_id + 2]);
-    vector_c triangle_pc_normal(
-        object.get_attrib().normals[3 * triangle_pc_normal_id],
-        object.get_attrib().normals[3 * triangle_pc_normal_id + 1],
-        object.get_attrib().normals[3 * triangle_pc_normal_id + 2]);
-
-    vector_c triangle_normal = triangle_pa_normal + triangle_pb_normal + triangle_pc_normal;
-    triangle_normal /= 3.0;
-    triangle_normal.normalize();
-
-    double cos_theta = (vector_c() - wi_direction) * triangle_normal;
-
-    // diffuse: Li * fr * cos(theta)
-    double diffuse_r = wi_radiance.get_x() * brdf_diffuse.get_x() * cos_theta;
-    double diffuse_g = wi_radiance.get_y() * brdf_diffuse.get_y() * cos_theta;
-    double diffuse_b = wi_radiance.get_z() * brdf_diffuse.get_z() * cos_theta;
-
-    // specular: Li * fr * cos(alpha)^shi
-    vector_c half_vector = wo_direction - wi_direction;
-    half_vector.normalize();
-    double cos_alpha = triangle_normal * half_vector;
-    double shininess = object.get_materials()[triangle_material_id].shininess;
-    double specular_r = wi_radiance.get_x() * brdf_specular.get_x() * std::pow(cos_alpha, shininess);
-    double specular_g = wi_radiance.get_y() * brdf_specular.get_y() * std::pow(cos_alpha, shininess);
-    double specular_b = wi_radiance.get_z() * brdf_specular.get_z() * std::pow(cos_alpha, shininess);
-
-    vector_c ans(diffuse_r + specular_r, diffuse_g + specular_g, diffuse_b + specular_b);
-    return ans;
 }
 
 vector_c renderer::shade_indirect_light(

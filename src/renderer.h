@@ -7,7 +7,7 @@
 
 /**
  * @brief renderer class
- * @author Liu Zhixing, liuzhixing0525@163.com
+ * @author Liu Zhixing, liuzhixing@u.nus.edu
  * @date 2022-10-06
  * 
  */
@@ -128,35 +128,48 @@ public:
      * @param p 
      * @param p_triangle_id 
      * @param wo 
-     * @return vector_c 
+     * @return vector_c the solution
      */
     vector_c shade_direct_light(
         const vector_c& p, const int& p_triangle_id,
         const vector_c& wo
     )const;
 
+    /**
+     * @brief solve the indirect light part of rendering equation
+     * 
+     * @param p 
+     * @param p_triangle_id 
+     * @param wo 
+     * @return vector_c the solution
+     */
     vector_c shade_indirect_light(
         const vector_c&p, const int& p_triangle_id,
         const vector_c& wo
     )const;
 
+    /**
+     * @brief light source sampling strategy
+     * 
+     * @param p 
+     * @param p_triangle_id 
+     * @param wo 
+     * @return vector_c 
+     */
     vector_c sampling_light_source(
         const vector_c &p, const int &p_triangle_id,
         const vector_c &wo
     )const;
 
-    vector_c sampling_bsdf(
-        const vector_c &p, const int &p_triangle_id,
-        const vector_c &wo
-    )const;
-
+    /**
+     * @brief generate a ray randomly, in a semi-sphere
+     * 
+     * @param p the starting point of the ray
+     * @param p_triangle_id 
+     * @return vector_c 
+     */
     vector_c generate_ray_randomly(
         const vector_c &p, const int &p_triangle_id
-    )const;
-
-    vector_c calculate_lo(
-        const vector_c &p, const int &p_triangle_id, const vector_c& wo_direction,
-        const vector_c &wi_direction, const vector_c& wi_radiance
     )const;
 
     /**

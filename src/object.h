@@ -2,6 +2,7 @@
 #include "tiny_obj_loader.h"
 #include "picture_io.h"
 #include <vector>
+#include <unordered_map>
 
 class object_c
 {
@@ -16,6 +17,12 @@ public:
     const tinyobj::attrib_t &get_attrib() const;
     const std::vector<tinyobj::shape_t> &get_shapes() const;
     const std::vector<tinyobj::material_t> &get_materials() const;
+
+    const std::unordered_map<std::string, unsigned char*> &get_textures() const;
+    const std::unordered_map<std::string, std::vector<int> > &get_textures_info() const;
+    
+    unsigned char* get_texture(const std::string& tex_name);
+    std::pair<int, int> get_texture_info(const std::string& tex_name);
 
 private:
     // attrib_t::vertices => 3 floats per vertex
@@ -81,6 +88,6 @@ private:
     std::string object_path_name;
     std::string object_file_name;
 
-    std::vector<std::string> tex_names;
-    std::vector<unsigned char*> tex_pictures;
+    std::unordered_map< std::string, unsigned char*> textures;
+    std::unordered_map< std::string, std::vector<int> > textures_info;
 };
